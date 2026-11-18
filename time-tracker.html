@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulting Time Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .backup-warning {
+            background: #ff6b6b;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .backup-warning.show {
+            display: block;
+        }
+
+        .backup-warning button {
+            background: white;
+            color: #ff6b6b;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-left: 12px;
+        }
+
+        .header {
+            color: white;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .form-full {
+            grid-column: 1 / -1;
+        }
+
+        select, input {
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-secondary {
+            background: #e9ecef;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #dee2e6;
+        }
+
+        .btn-success {
+            background: #51cf66;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #40c057;
+        }
+
+        .time-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .active-session {
+            background: #e7f5ff;
+            border: 2px solid #667eea;
+            padding: 16px;
+            border-radius: 8px;
+        }
+
+        .timer-display {
+            font-size: 36px;
+            font-weight: bold;
+            text-align: center;
+            color: #667eea;
+            font-family: 'Courier New', monospace;
+            margin: 16px 0;
+        }
+
+        .entry-item {
+            background: #f8f9fa;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+
+        .entry-header {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .entry-category {
+            font-size: 12px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .entry-time {
+            font-size: 12px;
+            color: #666;
+            margin: 4px 0;
+        }
+
+        .entry-description {
+            font-size: 12px;
+            color: #666;
+            font-style: italic;
+            margin-top: 4px;
+        }
+
+        .entry-actions {
+            margin-top: 8px;
+        }
+
+        .entry-actions button {
+            font-size: 11px;
+            padding: 4px 8px;
+            margin-right: 4px;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .toggle-timer {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .toggle-timer a {
+            color: white;
+            text-decoration: underline;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .modal-content button {
+            margin-top: 16px;
+            margin-right: 8px;
+        }
+
+        .backup-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+
+        .backup-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="backup-warning" id="backupWarning">
+            ⚠️ No backup in the last 7 days. Click below to save your data.
+            <button onclick="app.backup()">📥 Backup Now</button>
+        </div>
+
+        <div class="header">
+            <h1>Consulting Time Tracker</h1>
+            <p>Local • Auto-Backup Enabled</p>
+        </div>
+
+        <div class="card">
+            <div class="section-title">Time Entry</div>
+
+            <div class="form-grid form-full">
+                <input type="date" id="entryDate">
+            </div>
+
+            <div class="form-grid form-full">
+                <select id="contractor" onchange="app.updateCategories()">
+                    <option value="">Select Contractor</option>
+                    <option value="Link Economics">Link Economics</option>
+                    <option value="EKonomics LLC">EKonomics LLC</option>
+                </select>
+            </div>
+
+            <div class="form-grid form-full">
+                <input type="text" id="client" list="clientList" placeholder="Client">
+            </div>
+
+            <div class="form-grid">
+                <input type="text" id="project" list="projectList" placeholder="Project name">
+                <select id="category">
+                    <option value="">Select Category</option>
+                </select>
+            </div>
+
+            <div class="form-grid time-row form-full">
+                <input type="text" id="startTime" placeholder="Start time (HH:MM)" pattern="[0-2][0-9]:[0-5][0-9]">
+                <input type="text" id="endTime" placeholder="End time (HH:MM)" pattern="[0-2][0-9]:[0-5][0-9]">
+            </div>
+
+            <div class="form-grid form-full">
+                <input type="text" id="description" list="descriptionList" placeholder="Description (optional)">
+            </div>
+
+            <div class="form-grid form-full">
+                <button class="btn-primary" id="addBtn" onclick="app.saveEntry()">+ Add Entry</button>
+                <button class="btn-secondary" id="cancelBtn" onclick="app.cancelEdit()" style="display: none;">Cancel</button>
+            </div>
+
+            <div id="activeSession" class="active-session" style="display: none;">
+                <p><strong>Timer Active</strong></p>
+                <p id="activeInfo"></p>
+                <div class="timer-display" id="timerDisplay">00:00:00</div>
+                <button class="btn-success" onclick="app.stopTimer()" style="width: 100%; margin-top: 10px;">Stop Timer</button>
+            </div>
+
+            <div class="toggle-timer">
+                <a onclick="app.toggleTimer()">Use timer for current work</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="section-title">Today's Entries</div>
+            <div id="entriesList" class="empty-state">
+                <p>No entries yet. Add an entry to begin tracking.</p>
+            </div>
+
+            <div class="stats-grid" id="stats" style="display: none;">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalTime">0h 0m</div>
+                    <div class="stat-label">Total Time</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="entryCount">0</div>
+                    <div class="stat-label">Entries</div>
+                </div>
+            </div>
+
+            <button class="btn-secondary" id="exportBtn" onclick="app.exportCSV()" style="display: none; margin-top: 16px;">📋 Copy Entries</button>
+            <div id="exportBox" style="display: none; margin-top: 12px; background: #f8f9fa; padding: 12px; border-radius: 6px; overflow-x: auto;"></div>
+
+            <div class="backup-section">
+                <div class="backup-label">💾 BACKUP</div>
+                <button class="btn-secondary" onclick="app.backup()" style="margin-right: 8px; margin-bottom: 8px;">⬇️ Manual Backup</button>
+                <button class="btn-secondary" onclick="app.showRestoreDialog()">ℹ️ Backup Info</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="deleteModal" class="modal">
+        <div class="modal-content">
+            <p>You are about to delete this entry. This action cannot be undone.</p>
+            <button class="btn-secondary" onclick="app.cancelDelete()">No, Cancel</button>
+            <button class="btn-primary" onclick="app.confirmDelete()">Yes, Delete</button>
+        </div>
+    </div>
+
+    <!-- Datalists for autocomplete -->
+    <datalist id="clientList"></datalist>
+    <datalist id="projectList"></datalist>
+    <datalist id="descriptionList"></datalist>
+
+    <script>
+        /**
+         * TIME TRACKER APPLICATION
+         *
+         * Architecture:
+         * - Store: Manages all data (IndexedDB)
+         * - Validator: Validates entries
+         * - UI: Renders and updates the DOM
+         * - Timer: Manages the running timer
+         * - Backup: Handles CSV export
+         */
+
+        // ============================================================================
+        // DATA STORE - Single source of truth
+        // ============================================================================
+        class Store {
+            constructor() {
+                this.db = null;
+                this.isReady = false;
+                this.initDB();
+            }
+
+            initDB() {
+                return new Promise((resolve) => {
+                    const request = indexedDB.open('TimeTrackerDB', 1);
+                    request.onerror = () => console.error('DB error:', request.error);
+                    request.onsuccess = () => {
+                        this.db = request.result;
+                        this.isReady = true;
+                        resolve();
+                    };
+                    request.onupgradeneeded = (e) => {
+                        this.db = e.target.result;
+                        if (!this.db.objectStoreNames.contains('entries')) {
+                            this.db.createObjectStore('entries', { keyPath: 'id', autoIncrement: true });
+                        }
+                    };
+                });
+            }
+
+            async getAll() {
+                return new Promise((resolve) => {
+                    const transaction = this.db.transaction(['entries'], 'readonly');
+                    const store = transaction.objectStore('entries');
+                    const request = store.getAll();
+                    request.onsuccess = () => resolve(request.result);
+                });
+            }
+
+            async add(entry) {
+                return new Promise((resolve) => {
+                    const transaction = this.db.transaction(['entries'], 'readwrite');
+                    const store = transaction.objectStore('entries');
+                    const request = store.add(entry);
+                    request.onsuccess = () => resolve(request.result);
+                });
+            }
+
+            async update(id, entry) {
+                return new Promise((resolve) => {
+                    const transaction = this.db.transaction(['entries'], 'readwrite');
+                    const store = transaction.objectStore('entries');
+                    const request = store.put({ ...entry, id });
+                    request.onsuccess = () => resolve();
+                });
+            }
+
+            async delete(id) {
+                return new Promise((resolve) => {
+                    const transaction = this.db.transaction(['entries'], 'readwrite');
+                    const store = transaction.objectStore('entries');
+                    const request = store.delete(id);
+                    request.onsuccess = () => resolve();
+                });
+            }
+
+            async clear() {
+                return new Promise((resolve) => {
+                    const transaction = this.db.transaction(['entries'], 'readwrite');
+                    const store = transaction.objectStore('entries');
+                    const request = store.clear();
+                    request.onsuccess = () => resolve();
+                });
+            }
+        }
+
+        // ============================================================================
+        // VALIDATOR - Validates entries
+        // ============================================================================
+        class Validator {
+            static validateEntry(entry) {
+                const errors = [];
+                if (!entry.date) errors.push('Date is required');
+                if (!entry.contractor) errors.push('Contractor is required');
+                if (!entry.client) errors.push('Client is required');
+                if (!entry.project) errors.push('Project is required');
+                if (!entry.category) errors.push('Category is required');
+                if (!entry.startTime) errors.push('Start time is required');
+                if (!entry.endTime) errors.push('End time is required');
+                if (entry.endTime <= entry.startTime) errors.push('End time must be after start time');
+                return { valid: errors.length === 0, errors };
+            }
+
+            static parseTime(timeStr) {
+                const [hours, minutes] = timeStr.split(':').map(Number);
+                return hours * 60 + minutes;
+            }
+
+            static calculateDuration(startTime, endTime) {
+                const startMin = this.parseTime(startTime);
+                const endMin = this.parseTime(endTime);
+                return (endMin - startMin) * 60; // return seconds
+            }
+        }
+
+        // ============================================================================
+        // TIMER - Manages the running timer
+        // ============================================================================
+        class TimerManager {
+            constructor() {
+                this.activeEntry = null;
+                this.interval = null;
+            }
+
+            start(entry) {
+                this.activeEntry = {
+                    ...entry,
+                    startTime: Date.now()
+                };
+                this.startDisplay();
+            }
+
+            startDisplay() {
+                if (this.interval) clearInterval(this.interval);
+                this.interval = setInterval(() => this.updateDisplay(), 1000);
+            }
+
+            updateDisplay() {
+                if (!this.activeEntry) return;
+                const elapsed = Date.now() - this.activeEntry.startTime;
+                const hours = Math.floor(elapsed / 3600000);
+                const minutes = Math.floor((elapsed % 3600000) / 60000);
+                const seconds = Math.floor((elapsed % 60000) / 1000);
+                const display = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                document.getElementById('timerDisplay').textContent = display;
+            }
+
+            stop() {
+                if (!this.activeEntry) return null;
+                if (this.interval) clearInterval(this.interval);
+
+                const startDate = new Date(this.activeEntry.startTime);
+                const endDate = new Date();
+                const startTimeStr = startDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }).slice(0, 5);
+                const endTimeStr = endDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }).slice(0, 5);
+
+                const result = {
+                    startTime: startTimeStr,
+                    endTime: endTimeStr
+                };
+
+                this.activeEntry = null;
+                return result;
+            }
+
+            isRunning() {
+                return this.activeEntry !== null;
+            }
+
+            getCurrent() {
+                return this.activeEntry;
+            }
+        }
+
+        // ============================================================================
+        // BACKUP - Handles CSV export
+        // ============================================================================
+        class BackupManager {
+            static async exportCSV(entries) {
+                let csv = 'Date,Contractor,Client,Project,Category,Start Time,End Time,Duration (minutes),Description\n';
+                entries.forEach(entry => {
+                    const durMinutes = Math.round(entry.duration / 60);
+                    const desc = (entry.description || '').replace(/"/g, '""');
+                    csv += `"${entry.date}","${entry.contractor}","${entry.client}","${entry.project}","${entry.category}","${entry.startTime}","${entry.endTime}",${durMinutes},"${desc}"\n`;
+                });
+                return csv;
+            }
+
+            static downloadCSV(entries) {
+                this.exportCSV(entries).then(csv => {
+                    const blob = new Blob([csv], { type: 'text/csv' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    const now = new Date();
+                    const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}`;
+                    link.download = `time-tracker-backup-${timestamp}.csv`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+
+                    localStorage.setItem('lastBackupTime', Date.now().toString());
+                });
+            }
+        }
+
+        // ============================================================================
+        // UI - Renders the interface
+        // ============================================================================
+        class UI {
+            static setDefaultDate() {
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                document.getElementById('entryDate').value = `${year}-${month}-${day}`;
+            }
+
+            static getFormData() {
+                return {
+                    date: document.getElementById('entryDate').value,
+                    contractor: document.getElementById('contractor').value.trim(),
+                    client: document.getElementById('client').value.trim(),
+                    project: document.getElementById('project').value.trim(),
+                    category: document.getElementById('category').value,
+                    startTime: document.getElementById('startTime').value.trim(),
+                    endTime: document.getElementById('endTime').value.trim(),
+                    description: document.getElementById('description').value.trim()
+                };
+            }
+
+            static clearForm() {
+                this.setDefaultDate();
+                document.getElementById('contractor').value = '';
+                document.getElementById('client').value = '';
+                document.getElementById('startTime').value = '';
+                document.getElementById('endTime').value = '';
+                document.getElementById('project').value = '';
+                document.getElementById('category').value = '';
+                document.getElementById('description').value = '';
+            }
+
+            static updateCategories(contractor) {
+                const categorySelect = document.getElementById('category');
+                categorySelect.innerHTML = '<option value="">Select Category</option>';
+
+                const categories = contractor === 'Link Economics' ?
+                    ['Billable Work', 'Marketing', 'Research', 'Intern Mentoring'] :
+                    contractor === 'EKonomics LLC' ?
+                    ['Billable Work', 'Marketing', 'Research', 'Intern Mentoring'] :
+                    [];
+
+                categories.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat;
+                    option.textContent = cat;
+                    categorySelect.appendChild(option);
+                });
+            }
+
+            static renderEntries(entries) {
+                const container = document.getElementById('entriesList');
+                const exportBtn = document.getElementById('exportBtn');
+                const stats = document.getElementById('stats');
+
+                if (entries.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><p>No entries yet. Add an entry to begin tracking.</p></div>';
+                    exportBtn.style.display = 'none';
+                    stats.style.display = 'none';
+                    return;
+                }
+
+                let html = '';
+                let totalSeconds = 0;
+                const reversedEntries = [...entries].reverse();
+
+                reversedEntries.forEach((entry, reverseIdx) => {
+                    const idx = entries.length - 1 - reverseIdx;
+                    const hours = Math.floor(entry.duration / 3600);
+                    const minutes = Math.floor((entry.duration % 3600) / 60);
+                    const duration = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+                    totalSeconds += entry.duration;
+
+                    html += `
+                        <div class="entry-item">
+                            <div class="entry-header">${entry.contractor} • ${entry.client} • ${entry.project}</div>
+                            <div class="entry-category">${entry.category}</div>
+                            <div class="entry-time">${entry.date} • ${entry.startTime}-${entry.endTime} (${duration})</div>
+                            ${entry.description ? `<div class="entry-description">${entry.description}</div>` : ''}
+                            <div class="entry-actions">
+                                <button class="btn-secondary" onclick="app.editEntry(${idx})">✏️ Edit</button>
+                                <button class="btn-secondary" onclick="app.duplicateEntry(${idx})">📋 Duplicate</button>
+                                <button class="btn-secondary" onclick="app.deleteEntry(${idx})" style="color: #dc3545;">🗑️ Delete</button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = html;
+                exportBtn.style.display = 'block';
+                stats.style.display = 'grid';
+
+                const totalHours = Math.floor(totalSeconds / 3600);
+                const totalMinutes = Math.floor((totalSeconds % 3600) / 60);
+                document.getElementById('totalTime').textContent = `${totalHours}h ${totalMinutes}m`;
+                document.getElementById('entryCount').textContent = entries.length;
+            }
+
+            static updateAutocompleteLists(entries) {
+                const clients = new Set();
+                const projects = new Set();
+                const descriptions = new Set();
+
+                entries.forEach(entry => {
+                    if (entry.client) clients.add(entry.client);
+                    if (entry.project) projects.add(entry.project);
+                    if (entry.description) descriptions.add(entry.description);
+                });
+
+                this.populateDatalist('clientList', clients);
+                this.populateDatalist('projectList', projects);
+                this.populateDatalist('descriptionList', descriptions);
+            }
+
+            static populateDatalist(id, items) {
+                const datalist = document.getElementById(id);
+                datalist.innerHTML = '';
+                items.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item;
+                    datalist.appendChild(option);
+                });
+            }
+
+            static showTimer(contractor, client, project, category) {
+                document.getElementById('activeSession').style.display = 'block';
+                document.getElementById('activeInfo').textContent = `${contractor} • ${client} • ${project} • ${category}`;
+            }
+
+            static hideTimer() {
+                document.getElementById('activeSession').style.display = 'none';
+                document.getElementById('timerDisplay').textContent = '00:00:00';
+            }
+
+            static showDeleteModal() {
+                document.getElementById('deleteModal').classList.add('show');
+            }
+
+            static hideDeleteModal() {
+                document.getElementById('deleteModal').classList.remove('show');
+            }
+
+            static showExportBox(csv) {
+                const exportBox = document.getElementById('exportBox');
+                exportBox.textContent = csv;
+                exportBox.style.display = 'block';
+                navigator.clipboard.writeText(csv).then(() => {
+                    const btn = document.getElementById('exportBtn');
+                    const original = btn.textContent;
+                    btn.textContent = '✓ Copied to clipboard!';
+                    setTimeout(() => { btn.textContent = original; }, 2000);
+                });
+            }
+
+            static checkBackupWarning() {
+                const lastBackup = localStorage.getItem('lastBackupTime');
+                const now = Date.now();
+                const sevenDays = 7 * 24 * 60 * 60 * 1000;
+                const warning = document.getElementById('backupWarning');
+
+                if (!lastBackup || (now - parseInt(lastBackup)) > sevenDays) {
+                    warning.classList.add('show');
+                } else {
+                    warning.classList.remove('show');
+                }
+            }
+        }
+
+        // ============================================================================
+        // APPLICATION - Main controller
+        // ============================================================================
+        class Application {
+            constructor() {
+                this.store = new Store();
+                this.timer = new TimerManager();
+                this.editingIndex = null;
+            }
+
+            async init() {
+                await this.store.isReady;
+                UI.setDefaultDate();
+                await this.refresh();
+                UI.checkBackupWarning();
+                setInterval(() => UI.checkBackupWarning(), 3600000);
+                window.addEventListener('beforeunload', () => this.onBeforeUnload());
+            }
+
+            async refresh() {
+                const entries = await this.store.getAll();
+                UI.renderEntries(entries);
+                UI.updateAutocompleteLists(entries);
+            }
+
+            updateCategories() {
+                const contractor = document.getElementById('contractor').value;
+                UI.updateCategories(contractor);
+            }
+
+            async saveEntry() {
+                const data = UI.getFormData();
+                const validation = Validator.validateEntry(data);
+
+                if (!validation.valid) {
+                    alert(validation.errors.join('\n'));
+                    return;
+                }
+
+                const duration = Validator.calculateDuration(data.startTime, data.endTime);
+
+                if (this.editingIndex !== null) {
+                    const entries = await this.store.getAll();
+                    const entry = entries[this.editingIndex];
+                    await this.store.update(entry.id, { ...data, duration });
+                    this.editingIndex = null;
+                    document.getElementById('cancelBtn').style.display = 'none';
+                } else {
+                    await this.store.add({ ...data, duration });
+                }
+
+                UI.clearForm();
+                await this.refresh();
+            }
+
+            async editEntry(idx) {
+                const entries = await this.store.getAll();
+                const entry = entries[idx];
+
+                document.getElementById('entryDate').value = entry.date;
+                document.getElementById('contractor').value = entry.contractor;
+                document.getElementById('client').value = entry.client;
+                document.getElementById('project').value = entry.project;
+                document.getElementById('category').value = entry.category;
+                document.getElementById('startTime').value = entry.startTime;
+                document.getElementById('endTime').value = entry.endTime;
+                document.getElementById('description').value = entry.description || '';
+
+                this.updateCategories();
+                this.editingIndex = idx;
+                document.getElementById('cancelBtn').style.display = 'inline-block';
+                window.scrollTo(0, 0);
+            }
+
+            cancelEdit() {
+                this.editingIndex = null;
+                document.getElementById('cancelBtn').style.display = 'none';
+                UI.clearForm();
+                this.updateCategories();
+            }
+
+            async duplicateEntry(idx) {
+                const entries = await this.store.getAll();
+                const entry = { ...entries[idx] };
+                await this.store.add(entry);
+                await this.refresh();
+            }
+
+            deleteEntry(idx) {
+                this._deleteIndex = idx;
+                UI.showDeleteModal();
+            }
+
+            async confirmDelete() {
+                const entries = await this.store.getAll();
+                await this.store.delete(entries[this._deleteIndex].id);
+                this._deleteIndex = null;
+                UI.hideDeleteModal();
+                await this.refresh();
+            }
+
+            cancelDelete() {
+                this._deleteIndex = null;
+                UI.hideDeleteModal();
+            }
+
+            toggleTimer() {
+                if (this.timer.isRunning()) {
+                    alert('Timer already running');
+                    return;
+                }
+
+                const data = UI.getFormData();
+                if (!data.contractor || !data.client || !data.project || !data.category) {
+                    alert('Please fill in contractor, client, project, and category first');
+                    return;
+                }
+
+                this.timer.start(data);
+                UI.showTimer(data.contractor, data.client, data.project, data.category);
+            }
+
+            async stopTimer() {
+                const times = this.timer.stop();
+                if (!times) return;
+
+                document.getElementById('startTime').value = times.startTime;
+                document.getElementById('endTime').value = times.endTime;
+                UI.hideTimer();
+
+                await this.saveEntry();
+            }
+
+            async exportCSV() {
+                const entries = await this.store.getAll();
+                const csv = await BackupManager.exportCSV(entries);
+                UI.showExportBox(csv);
+            }
+
+            async backup() {
+                const entries = await this.store.getAll();
+                BackupManager.downloadCSV(entries);
+            }
+
+            showRestoreDialog() {
+                alert('CSV backups can be opened directly in Excel or any spreadsheet application. Download a backup and open it in Excel.');
+            }
+
+            onBeforeUnload() {
+                const lastBackup = localStorage.getItem('lastBackupTime');
+                const now = Date.now();
+                const sevenDays = 7 * 24 * 60 * 60 * 1000;
+
+                if (!lastBackup || (now - parseInt(lastBackup)) > sevenDays) {
+                    return 'You have unsaved data. Click Backup Now before closing.';
+                }
+            }
+        }
+
+        // ============================================================================
+        // INITIALIZATION
+        // ============================================================================
+        const app = new Application();
+        document.addEventListener('DOMContentLoaded', () => app.init());
+    </script>
+</body>
+</html>
