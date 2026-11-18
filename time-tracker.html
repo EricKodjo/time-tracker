@@ -856,6 +856,7 @@
             async duplicateEntry(idx) {
                 const entries = await this.store.getAll();
                 const entry = { ...entries[idx] };
+                delete entry.id;  // Remove ID so a new one is generated
                 await this.store.add(entry);
                 await this.refresh();
             }
